@@ -3,6 +3,8 @@
 data/*
 music/*
 notebooks/.cache
-.flask_session/*
-.spotify_caches/*
+*/.flask_session/*
+*/.spotify_caches/*
 */__pycache__/*
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
