@@ -24,21 +24,10 @@ def generateSpotifyObject():
                                 cache_path=session_cache_path(), 
                                 show_dialog=True)
 
-    # if request.args.get("code"):
-    #     # Step 3. Being redirected from Spotify auth page
-    #     auth_manager.get_access_token(request.args.get("code"))
-    #     return redirect('/')
-
-    # if not auth_manager.get_cached_token():
-    #     # Step 2. Display sign in link when no token
-    #     auth_url = auth_manager.get_authorize_url()
-    #     return f'<h2><a href="{auth_url}">Sign in</a></h2>'
-
-    # Step 4. Signed in, display data
     sp = Spotify(auth_manager=auth_manager)
     return sp
 
-def populateStateData():
+def populateSpotifyStateData():
     if not session_state.spotipy:
         session_state.spotipy = generateSpotifyObject()
     
