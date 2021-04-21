@@ -1,4 +1,4 @@
-from utils import chunk
+from .utils import chunk
 import pandas as pd
 import flatdict
 import spotipy
@@ -11,18 +11,9 @@ import time
 from tqdm import tqdm
 from pathlib import Path
 
-project_dir = Path().absolute()
-data_dir = Path(project_dir, "data")
-load_dotenv(find_dotenv())
-tqdm.pandas()
 
-scope = "user-top-read%20user-read-currently-playing%20user-read-playback-state%20playlist-read-collaborative%20playlist-read-private%20user-library-read%20user-read-recently-played%20user-follow-read"
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
-
-#TODO: Consider Multiprocessing
-#TODO: Add loggging
-def get_saved_track_page_count():
-    first_page_saved_tracks = sp.current_user_saved_tracks(limit=50)
+def get_saved_track_page_count(spotify):
+    first_page_saved_tracks = spotify.current_user_saved_tracks(limit=50)
     # Tells total amount of saved tracks
     count_saved_songs = first_page_saved_tracks['total']
     total_pages_saved_songs = math.ceil(
@@ -30,25 +21,25 @@ def get_saved_track_page_count():
     return total_pages_saved_songs
 
 
-def get_saved_tracks(page_num):
+def get_saved_tracks(spotify, page_num):
     time.sleep(0.25)
-    return sp.current_user_saved_tracks(limit=50, offset=page_num*50)['items']
+    return spotify.current_user_saved_tracks(limit=50, offset=page_num*50)['items']
 
 
-def get_track_features(track_ids):
+def get_track_features(spotify, track_ids):
     time.sleep(0.25)
     if len(track_ids) > 100:
         print("Too many tracks")
     else:
-        return sp.audio_features(track_ids)
+        return spotify.audio_features(track_ids)
 
 
-def get_artist_features(artist_ids):
+def get_artist_features(spotify, artist_ids):
     time.sleep(0.25)
     if len(artist_ids) > 50:
         print("Too many tracks")
     else:
-        return sp.artists(artist_ids)
+        return spotify.artists(artist_ids)
 
 
 def flatten_artist_features(artist_features):
@@ -73,12 +64,14 @@ def flatten_artist_features(artist_features):
 
     return flattened_artist_features
 
-def main():
-    total_pages_saved_songs = get_saved_track_page_count()
+
+def gather_all_data(spotify):
+
+    total_pages_saved_songs = get_saved_track_page_count(spotify)
     liked_tracks = list(chain.from_iterable([get_saved_tracks(
-        page_num) for page_num in tqdm(list(range(total_pages_saved_songs)))]))
+        spotify, page_num) for page_num in tqdm(list(range(total_pages_saved_songs)))]))
     flattened_liked_tracks = [dict(flatdict.FlatterDict(track))
-                            for track in liked_tracks]
+                              for track in liked_tracks]
     full_liked_tracks_df = pd.DataFrame(flattened_liked_tracks)
     track_col_renames = {
         "track:album:album_type": "album_type",
@@ -118,7 +111,7 @@ def main():
     liked_track_ids = liked_tracks_df["track_spid"].unique().tolist()
     chunked_liked_track_ids = chunk(liked_track_ids, 100)
     chunked_liked_track_features = [get_track_features(
-        chunked_tracks) for chunked_tracks in tqdm(chunked_liked_track_ids)]
+        spotify, chunked_tracks) for chunked_tracks in tqdm(chunked_liked_track_ids)]
     liked_track_features = [val for val in list(
         chain.from_iterable(chunked_liked_track_features)) if val]
     liked_track_features_df = pd.DataFrame(liked_track_features).drop([
@@ -131,7 +124,7 @@ def main():
     liked_artist_ids = liked_tracks_df["artist_spid"].unique().tolist()
     chunked_liked_artist_ids = chunk(liked_artist_ids, 50)
     chunked_liked_artist_features = [get_artist_features(
-        chunked_artists)['artists'] for chunked_artists in tqdm(chunked_liked_artist_ids)]
+        spotify, chunked_artists)['artists'] for chunked_artists in tqdm(chunked_liked_artist_ids)]
     liked_artist_features = [val for val in list(
         chain.from_iterable(chunked_liked_artist_features)) if val]
     flattened_liked_artist_features = [flatten_artist_features(
@@ -141,8 +134,14 @@ def main():
     liked_songs_info_df = pd.merge(liked_tracks_df, liked_track_features_df, on="track_spid").merge(
         liked_artist_features_df, on="artist_spid").sort_values("added_at", ascending=False)
     liked_songs_info_df['interaction_style'] = "Liked Songs"
-    spotify_path = Path(data_dir, f"{sp.me()['id']}.csv")
+
+    data_dir = Path(Path().resolve(), "data")
+    print(data_dir)
+    spotify_path = Path(data_dir, f"{spotify.me()['id']}.csv")
     liked_songs_info_df.to_csv(spotify_path, index=False)
+
+    return liked_songs_info_df
+
 
 if __name__ == "__main__":
     main()

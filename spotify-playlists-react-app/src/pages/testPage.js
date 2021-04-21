@@ -22,7 +22,7 @@ export class TestPage extends Component {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spotify_token: spotifyToken }),
       };
-      fetch(baseAPI + "/spotify_me", spotifyRequestOptions)
+      fetch(baseAPI + "/my_spotify", spotifyRequestOptions)
         .then((response) => response.json())
         .then((data) => this.setState({ spotifyName: data["spotifyName"] }));
     }
