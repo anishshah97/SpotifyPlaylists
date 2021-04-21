@@ -1,3 +1,5 @@
 {
-    "python.pythonPath": "music/bin/python"
+    "python.pythonPath": "music/bin/python",
+    "git.ignoreLimitWarning": true,
+    "python.formatting.provider": "autopep8"
 }

@@ -8,3 +8,4 @@ notebooks/.cache
 */__pycache__/*
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+spotify-playlists/node_modules
