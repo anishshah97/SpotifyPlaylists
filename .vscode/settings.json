@@ -1,5 +1,7 @@
 {
-    "python.pythonPath": "music/bin/python",
-    "git.ignoreLimitWarning": true,
-    "python.formatting.provider": "autopep8"
+  "python.pythonPath": "music\\Scripts\\python.exe",
+  "git.ignoreLimitWarning": true,
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true
 }

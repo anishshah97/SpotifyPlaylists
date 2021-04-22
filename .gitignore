@@ -9,3 +9,5 @@ notebooks/.cache
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 spotify-playlists/node_modules
+.cache
+__pycache__/
