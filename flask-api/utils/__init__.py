@@ -1,2 +1,3 @@
-from .spotifyData import gather_all_data
+from spotifyData import gather_liked_tracks_data
 import utils
+from spotifyClasses import spotifyUser
