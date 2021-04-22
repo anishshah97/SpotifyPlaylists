@@ -1,4 +1,4 @@
-from utils import chunk
+from .utils import chunk
 import pandas as pd
 import flatdict
 import math

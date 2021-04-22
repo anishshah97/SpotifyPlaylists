@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 import os
-from spotifyData import gather_liked_tracks_data
+from .spotifyData import gather_liked_tracks_data
 
 load_dotenv(find_dotenv())
 
@@ -17,7 +17,7 @@ class spotifyUser:
         self.store = store
         self.local = local
         self.session_time = datetime.now().strftime(date_format_string)
-        self.user_id = self.spotify.me()["id"]
+        self.spotify_me = self.spotify.me()
         self.liked_songs_info = {
             "liked_tracks": None,
             "liked_track_features": None,
@@ -27,7 +27,7 @@ class spotifyUser:
     def pull_liked_songs_data(self):
         testing = self.testing
         spotify = self.spotify
-        user_id = self.user_id
+        user_id = self.spotify_me["id"]
         liked_song_file_names = self.liked_songs_info.keys()
         if testing:
             print("testing")
@@ -53,7 +53,7 @@ class spotifyUser:
     def decide_path(self, df_name):
         AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
         local = self.local
-        user_id = self.user_id
+        user_id = self.spotify_me["id"]
         date_time = self.session_time
 
         file_name = f"{df_name}.csv"
