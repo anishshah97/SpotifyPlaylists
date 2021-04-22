@@ -12,5 +12,3 @@ spotify-playlists/node_modules
 .cache
 __pycache__/
 .vscode/settings.json
-*.pyc
-*.pyc

@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "music\\Scripts\\python.exe",
+  "python.pythonPath": "music/bin/python",
   "git.ignoreLimitWarning": true,
   "python.formatting.provider": "black",
   "python.linting.enabled": true,
