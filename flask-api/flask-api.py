@@ -15,6 +15,12 @@ def get_my_spotify(spotify_token):
     return spotifyUser(spotify)
 
 
+@app.route("/", methods=["GET"])
+@cross_origin()
+def hello():
+    return {"hello": "world"}
+
+
 @app.route("/my_spotify_id", methods=["POST"])
 @cross_origin()
 def get_my_spotify_id():

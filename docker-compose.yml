@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  react-app:
+    build:
+      context: "./spotify-playlists-react-app"
+      dockerfile: "Dockerfile"
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./spotify-playlists-react-app:/spotify-playlists-react-app"
+      - "/spotify-playlists-react-app/node_modules"
+  flask:
+    build:
+      context: "./flask-api"
+      dockerfile: "Dockerfile"
+    ports:
+      - "5000:5000"
+    volumes:
+      - "./flask-api:/flask-api"
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
