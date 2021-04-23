@@ -89,7 +89,7 @@ def get_liked_tracks_df(spotify):
         "track:artists:0:id": "artist_spid",
         "track:artists:0:name": "artist_name",
         "track:artists:0:type": "artist_type",
-        #    "track:duration_ms": "track_duration_ms",
+        "track:duration_ms": "track_duration_ms",
         "track:explicit": "track_explicit",
         "track:external_ids:isrc": "track_isrc",
         "track:external_urls:spotify": "track_spurl",

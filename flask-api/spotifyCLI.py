@@ -1,35 +1,23 @@
 import argparse
 import spotipy
-from utils import str2bool
-from spotifyClasses import spotifyUser
+from utils import spotifyUser
 
 parser = argparse.ArgumentParser(description="CLI tool to drive spotify data gathering commands")
 parser.add_argument(
-    "-t",
-    type=str2bool,
-    dest="testing",
-    nargs="?",
-    const=True,
-    default=False,
-    help="Pull data from filesystem for downstream data tasks",
+    "-td",
+    "--test-data",
+    type=str,
+    choices=["local", "s3"],
+    default=None,
+    help="String choice of job board for which to search and scrape from",
 )
 parser.add_argument(
     "-s",
-    type=str2bool,
-    dest="store",
-    nargs="?",
-    const=True,
-    default=False,
-    help="Store data to decided filesystem",
-)
-parser.add_argument(
-    "-l",
-    type=str2bool,
-    dest="local",
-    nargs="?",
-    const=True,
-    default=False,
-    help="Use local routes for filesystem storage or data retrieval",
+    "--store",
+    type=str,
+    choices=["local", "s3"],
+    default=None,
+    help="String choice of job board for which to search and scrape from",
 )
 if __name__ == "__main__":
     auth_manager = spotipy.oauth2.SpotifyOAuth(
