@@ -7,18 +7,18 @@ from .spotifyData import gather_liked_tracks_data
 
 load_dotenv(find_dotenv())
 
-date_format_string = "%m-%d-%Y-%H-%M-%S"
+DATE_FORMAT_STRING = "%m-%d-%Y-%H-%M-%S"
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
 class spotifyUser:
-    def __init__(self, spotify, test_data=None, store=None):
+    def __init__(self, spotify, cached_data=None, store=None):
         self.spotify = spotify
-        self.test_data = test_data
+        self.cached_data = cached_data
         self.store = store
-        self.session_time = datetime.now().strftime(date_format_string)
+        self.session_time = datetime.now().strftime(DATE_FORMAT_STRING)
         self.spotify_me = self.spotify.me()
         self.liked_songs_info = {
             "liked_tracks": None,
@@ -27,17 +27,17 @@ class spotifyUser:
         }
 
     def pull_liked_songs_data(self):
-        test_data = self.test_data
+        cached_data = self.cached_data
         spotify = self.spotify
         user_id = self.spotify_me["id"]
 
         liked_song_file_names = self.liked_songs_info.keys()
-        if test_data == "local":
+        if cached_data == "local":
             print("using local test data")
-            data_dir = Path(Path().resolve().parent.parent, "data")
+            data_dir = Path(Path().resolve().parent, "data")
             user_path = Path(data_dir, user_id)
             date_folder_paths = {
-                date_path: datetime.strptime(date_path.name, date_format_string)
+                date_path: datetime.strptime(date_path.name, DATE_FORMAT_STRING)
                 for date_path in user_path.glob("*/")
             }
             latest_session_date = max(date_folder_paths, key=date_folder_paths.get)
@@ -47,7 +47,7 @@ class spotifyUser:
                 spotify_data_path = Path(session_path, df_name + ".csv")
                 print(f"opening {spotify_data_path}")
                 liked_songs_info_dfs[df_name] = pd.read_csv(spotify_data_path)
-        elif test_data == "s3":
+        elif cached_data == "s3":
             pass
         else:
             print("pulling data from spotify")
@@ -63,7 +63,7 @@ class spotifyUser:
         file_name = f"{df_name}.csv"
         if store == "local":
             print("local path")
-            data_dir = Path(Path().resolve().parent.parent, "data")
+            data_dir = Path(Path().resolve().parent, "data")
             user_path = Path(data_dir, user_id)
             session_time_path = Path(user_path, date_time)
             session_time_path.mkdir(parents=True, exist_ok=True)
