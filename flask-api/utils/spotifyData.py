@@ -5,7 +5,7 @@ import math
 from itertools import chain
 import time
 from tqdm import tqdm
-from datetime import datetime
+import datetime
 
 
 def get_saved_track_page_count(spotify):
@@ -118,6 +118,7 @@ def get_track_features_df(spotify, track_ids):
         .drop(["uri", "track_href", "analysis_url", "type"], axis=1)
         .rename({"id": "spid"}, axis=1)
         .add_prefix("track_")
+        # .set_index("track_spid")
     )
     return track_features_df
 
@@ -130,7 +131,8 @@ def get_artist_features_df(spotify, artist_ids):
     ]
     artist_features = [val for val in list(chain.from_iterable(chunked_artist_features)) if val]
     flattened_artist_features = [flatten_artist_features(artist) for artist in artist_features]
-    artist_features_df = pd.DataFrame(flattened_artist_features)
+    artist_features_df = pd.DataFrame(flattened_artist_features)  # .set_index("artist_spid")
+    artist_features_df["artist_genres"] = artist_features_df["artist_genres"].map(list)
     return artist_features_df
 
 
@@ -156,7 +158,7 @@ def gather_liked_tracks_data(spotify):
         "liked_track_features": liked_track_features_df,
         "liked_track_artist_features": liked_artist_features_df,
     }
-    time_pulled = datetime.now()
+    time_pulled = datetime.datetime.now(datetime.timezone.utc).isoformat()
     for df in liked_songs_info_dfs.values():
         df["pulled"] = time_pulled
 

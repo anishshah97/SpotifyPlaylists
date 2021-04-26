@@ -5,25 +5,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Current File",
+      "name": "Spotify CLI",
       "type": "python",
       "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
-    },
-
-    {
-      "name": "Spotify Flask",
-      "type": "python",
-      "request": "launch",
-      "module": "flask",
-      "env": {
-        "FLASK_APP": "testing/spotifyFlask.py",
-        "FLASK_ENV": "development",
-        "FLASK_DEBUG": "0"
-      },
-      "args": ["run", "--no-debugger"],
-      "jinja": true
+      "program": "${workspaceFolder}/flask-api/spotifyCLI.py",
+      "console": "integratedTerminal",
+      "args": ["-cd", "local", "-s", "mongo"],
+      "cwd": "${workspaceFolder}/flask-api"
     }
   ]
 }
