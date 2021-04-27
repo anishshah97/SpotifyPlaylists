@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/flask-api/spotifyCLI.py",
       "console": "integratedTerminal",
-      "args": ["-cd", "local", "-s", "mongo"],
+      "args": ["-cd", "local", "-s", "redis"],
       "cwd": "${workspaceFolder}/flask-api"
     }
   ]

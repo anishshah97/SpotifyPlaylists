@@ -4,8 +4,8 @@ import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 import os
 import redis
-import pyarrow as pa
 from pymongo import MongoClient, ReplaceOne
+import pickle
 from .spotifyData import gather_liked_tracks_data
 from .utils import chunk
 
@@ -18,13 +18,19 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = os.getenv("REDIS_PORT")
 MONGO_CONN = os.getenv("MONGO_CONN")
+
+# BUG: Move to session class? Or is one global connection okay?
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 mongo = MongoClient(MONGO_CONN)
 mongo_spotify_data = mongo["SpotifyData"]
 mongo_spotify_tracks = mongo_spotify_data["Tracks"]
 mongo_spotify_artists = mongo_spotify_data["Artists"]
 
+# TODO: MAke functional?
 # TODO: Change name to spotifyRunner or something as calling this user seems improper
+# TODO: Fix variable names
+# - cached_data -> origin_data_path
+# - store -> export_data_path
 class spotifyUser:
     def __init__(self, spotify, cached_data=None, store=None):
         self.spotify = spotify
@@ -33,12 +39,14 @@ class spotifyUser:
         self.session_time = datetime.datetime.now(
             datetime.timezone.utc
         ).isoformat()  # .strftime(DATE_FORMAT_STRING)
+        # BUG: Running this will always result on a profile API request. Involving caching in this too?
         self.spotify_me = self.spotify.me()
         self.default_liked_df_names = [
             "liked_tracks",
             "liked_track_features",
             "liked_track_artist_features",
         ]
+        # TODO: Abstract this away?
         self.liked_songs_info = {df_name: None for df_name in self.default_liked_df_names}
 
     def set_store(self, store=None):
@@ -51,12 +59,17 @@ class spotifyUser:
             self.cached_data = cached_data
         return None
 
-    def pull_liked_songs_data(self):
-        cached_data = self.cached_data
+    # NOTE: list of names of files to pull from for a spotifyuser session
+    # NOTE: we will always want to pull the latest data from the cache for now
+    # TODO: Change name of function
+    # TODO: change name of variable
+    def pull_liked_songs_data(self, df_names=None, cached_data=None):
+        if not cached_data:
+            cached_data = self.cached_data
+        if not df_names:
+            df_names = self.default_liked_df_names
         spotify = self.spotify
         user_id = self.spotify_me["id"]
-
-        liked_song_file_names = self.default_liked_df_names
         if cached_data == "local":
             print("using local cached data")
             raw_data_dir = Path(Path().resolve().parent, "data", "raw")
@@ -66,11 +79,12 @@ class spotifyUser:
                 for date_path in user_path.glob("*/")
             }
             liked_songs_info_dfs = {}
-            for df_name in liked_song_file_names:
+            for df_name in df_names:
                 spotify_data_path = self.decide_local_cache_path(
                     user_path, date_folder_paths, df_name
                 )
                 print(f"opening {spotify_data_path}")
+                # TODO: If file doesnt exist then an error will throw
                 liked_songs_info_dfs[df_name] = pd.read_parquet(spotify_data_path)
         elif cached_data == "s3":
             print("using s3 cached data")
@@ -95,6 +109,7 @@ class spotifyUser:
         spotify_data_path = Path(session_path, df_file_name)
         return spotify_data_path
 
+    # TODO: Rename function name
     def decide_storage_path(self, df_name):
         store = self.store
         user_id = self.spotify_me["id"]
@@ -120,6 +135,7 @@ class spotifyUser:
             print("mongo path not needed")
         return spotify_data_path
 
+    # TODO: Rename function and variable names
     def decide_storage_and_path(self, df_name, liked_songs_info_df):
         store = self.store
         if store:
@@ -138,7 +154,20 @@ class spotifyUser:
                 )
                 return True
             elif store == "redis":
-                pass
+                print("redis store")
+                if df_name in ["liked_tracks"]:
+                    user_id = self.spotify_me["id"]
+                    if df_name == "liked_tracks":
+                        # NOTE: expire after 1 day
+                        r.set(
+                            "user:" + user_id + ":liked_tracks",
+                            pickle.dumps(liked_songs_info_df),
+                            ex=86400,
+                        )
+                        return True
+                    else:
+                        return False
+                    # context.deserialize(r.get("key"))
             elif store == "mongo":
                 ops_list = []
                 if df_name in ["liked_track_features", "liked_track_artist_features"]:
@@ -167,17 +196,23 @@ class spotifyUser:
 
         return False
 
-    # liked_songs_info should be a dict containing data
-    def set_users_liked_song_info(self, liked_songs_info=None):
+    # NOTE: liked_songs_info should be a dict containing data
+    def set_users_liked_song_info(self, update=True, liked_songs_info=None):
 
         if isinstance(liked_songs_info, dict):
-            self.liked_songs_info = liked_songs_info
+            if update:
+                self.liked_songs_info.update(liked_songs_info)
+            else:
+                self.liked_songs_info = liked_songs_info
         else:
+            # BUG: change fallback default behavior?
             self.liked_songs_info = self.pull_liked_songs_data()
 
         return None
 
-    # file_names should be a list of df names in the keys to export
+    # NOTE: file_names should be a list of df names in the keys to export
+    # TODO: pass json of filename:storage_option to do export
+    # - Default stores to wherever in self.store
     def export_liked_songs(self, file_names="all"):
 
         dfs_to_export = []
@@ -192,13 +227,16 @@ class spotifyUser:
                         print(f"{file_name} doesn't exist in this data")
 
         for df_name in dfs_to_export:
+            print("------------")
             print(df_name)
             liked_songs_info_df = self.liked_songs_info[df_name]
             if isinstance(liked_songs_info_df, pd.DataFrame):
                 if self.decide_storage_and_path(df_name, liked_songs_info_df):
                     print("successful save")
+                    print("OOOOOOOOOOOOO")
                 else:
                     print("didnt save")
+                    print("XXXXXXXXXXXXX")
             else:
                 print(f"{df_name} contains no data!")
 
