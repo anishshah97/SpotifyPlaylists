@@ -1,18 +1,22 @@
-from .utils import chunk
-import pandas as pd
-import flatdict
-import math
-from itertools import chain
-import time
-from tqdm import tqdm
 import datetime
+import math
+import time
+from itertools import chain
+
+import flatdict
+import pandas as pd
+from tqdm import tqdm
+
+from .utils import chunk
 
 
 def get_saved_track_page_count(spotify):
     first_page_saved_tracks = spotify.current_user_saved_tracks(limit=50)
     # Tells total amount of saved tracks
     count_saved_songs = first_page_saved_tracks["total"]
-    total_pages_saved_songs = math.ceil(count_saved_songs / 50)  # Can get 50 tracks at a time
+    total_pages_saved_songs = math.ceil(
+        count_saved_songs / 50
+    )  # Can get 50 tracks at a time
     return total_pages_saved_songs
 
 
@@ -70,7 +74,9 @@ def get_liked_tracks_df(spotify):
             ]
         )
     )
-    flattened_liked_tracks = [dict(flatdict.FlatterDict(track)) for track in liked_tracks]
+    flattened_liked_tracks = [
+        dict(flatdict.FlatterDict(track)) for track in liked_tracks
+    ]
     full_liked_tracks_df = pd.DataFrame(flattened_liked_tracks)
     track_col_renames = {
         "track:album:album_type": "album_type",
@@ -102,7 +108,13 @@ def get_liked_tracks_df(spotify):
         "track:type": "track_type",
     }
     des_tracks_cols = ["added_at"] + list(track_col_renames.values())
-    liked_tracks_df = full_liked_tracks_df.rename(track_col_renames, axis=1)[des_tracks_cols]
+    liked_tracks_df = full_liked_tracks_df.rename(track_col_renames, axis=1)[
+        des_tracks_cols
+    ]
+    liked_tracks_df["interaction_style"] = "Liked Songs"
+    liked_tracks_df["time_pulled"] = datetime.datetime.now(
+        datetime.timezone.utc
+    ).isoformat()
     return liked_tracks_df
 
 
@@ -110,9 +122,12 @@ def get_track_features_df(spotify, track_ids):
 
     chunked_track_ids = chunk(track_ids, 100)
     chunked_track_features = [
-        get_track_features(spotify, chunked_tracks) for chunked_tracks in tqdm(chunked_track_ids)
+        get_track_features(spotify, chunked_tracks)
+        for chunked_tracks in tqdm(chunked_track_ids)
     ]
-    track_features = [val for val in list(chain.from_iterable(chunked_track_features)) if val]
+    track_features = [
+        val for val in list(chain.from_iterable(chunked_track_features)) if val
+    ]
     track_features_df = (
         pd.DataFrame(track_features)
         .drop(["uri", "track_href", "analysis_url", "type"], axis=1)
@@ -120,6 +135,9 @@ def get_track_features_df(spotify, track_ids):
         .add_prefix("track_")
         # .set_index("track_spid")
     )
+    track_features_df["time_pulled"] = datetime.datetime.now(
+        datetime.timezone.utc
+    ).isoformat()
     return track_features_df
 
 
@@ -129,10 +147,19 @@ def get_artist_features_df(spotify, artist_ids):
         get_artist_features(spotify, chunked_artists)["artists"]
         for chunked_artists in tqdm(chunked_artist_ids)
     ]
-    artist_features = [val for val in list(chain.from_iterable(chunked_artist_features)) if val]
-    flattened_artist_features = [flatten_artist_features(artist) for artist in artist_features]
-    artist_features_df = pd.DataFrame(flattened_artist_features)  # .set_index("artist_spid")
+    artist_features = [
+        val for val in list(chain.from_iterable(chunked_artist_features)) if val
+    ]
+    flattened_artist_features = [
+        flatten_artist_features(artist) for artist in artist_features
+    ]
+    artist_features_df = pd.DataFrame(
+        flattened_artist_features
+    )  # .set_index("artist_spid")
     artist_features_df["artist_genres"] = artist_features_df["artist_genres"].map(list)
+    artist_features_df["time_pulled"] = datetime.datetime.now(
+        datetime.timezone.utc
+    ).isoformat()
     return artist_features_df
 
 
@@ -145,14 +172,6 @@ def gather_liked_tracks_data(spotify):
     liked_track_features_df = get_track_features_df(spotify, liked_track_ids)
     liked_artist_features_df = get_artist_features_df(spotify, liked_artist_ids)
 
-    # liked_songs_info_df = (
-    #     pd.merge(liked_tracks_df, liked_track_features_df, on="track_spid")
-    #     .merge(liked_artist_features_df, on="artist_spid")
-    #     .sort_values("added_at", ascending=False)
-    # )
-    # liked_songs_info_df["interaction_style"] = "Liked Songs"
-
-    liked_tracks_df["interaction_style"] = "Liked Songs"
     liked_songs_info_dfs = {
         "liked_tracks": liked_tracks_df,
         "liked_track_features": liked_track_features_df,
@@ -160,6 +179,6 @@ def gather_liked_tracks_data(spotify):
     }
     time_pulled = datetime.datetime.now(datetime.timezone.utc).isoformat()
     for df in liked_songs_info_dfs.values():
-        df["pulled"] = time_pulled
+        df["time_pulled"] = time_pulled
 
     return liked_songs_info_dfs

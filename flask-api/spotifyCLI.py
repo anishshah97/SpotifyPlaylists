@@ -1,25 +1,29 @@
 import argparse
-import spotipy
-from utils import spotifyUser
 
-parser = argparse.ArgumentParser(description="CLI tool to drive spotify data gathering commands")
-parser.add_argument(
-    "-cd",
-    "--cached-data",
-    type=str,
-    choices=["local", "s3", "redis", "mongo"],
-    dest="cached_data",
-    default=None,
-    help="String choice of where to get latest cache data from `local` or `s3`",
+import spotipy
+
+from utils import spotifyUserSession
+
+parser = argparse.ArgumentParser(
+    description="CLI tool to drive spotify data gathering commands"
 )
 parser.add_argument(
-    "-s",
-    "--store",
+    "-ods",
+    "--origin-data-source",
     type=str,
     choices=["local", "s3", "redis", "mongo"],
-    dest="store",
+    dest="origin_data_source",
     default=None,
-    help="String choice of whether to store in `local` or `s3`",
+    help="String choice of where to get latest cache data from `local`, `s3`, `redis`, or `mongo`",
+)
+parser.add_argument(
+    "-eds",
+    "--export-data-source",
+    type=str,
+    choices=["local", "s3", "redis", "mongo"],
+    dest="export_data_source",
+    default=None,
+    help="String choice of whether to store in `local`, `s3`, `redis`, or `mongo`",
 )
 
 
@@ -31,9 +35,9 @@ def main(args):
     spotify = spotipy.Spotify(auth_manager=auth_manager)
 
     # TODO: Abstract spotifyUser testing into another class that wraps the spotifyUSer class which holds only necessary information
-    spot_user = spotifyUser(spotify, **vars(args))
-    spot_user.set_users_liked_song_info()
-    print(spot_user.export_liked_songs())
+    spot_user = spotifyUserSession(spotify, **vars(args))
+    spot_user.set_session_data(spot_user.bulk_get_session_data())
+    spot_user.bulk_store_session_data()
 
 
 if __name__ == "__main__":

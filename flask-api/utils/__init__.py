@@ -1,1 +1,1 @@
-from .spotifyClasses import spotifyUser
+from .spotifyClasses import spotifyUserSession
