@@ -36,8 +36,16 @@ def main(args):
 
     # TODO: Abstract spotifyUser testing into another class that wraps the spotifyUSer class which holds only necessary information
     spot_user = spotifyUserSession(spotify, **vars(args))
-    spot_user.set_session_data(spot_user.bulk_get_session_data())
-    spot_user.bulk_store_session_data()
+    liked_track_dicts = spot_user.get_and_update_user_liked_tracks_data()
+    liked_tracks = liked_track_dicts["liked_tracks"]
+    print(f"liked_tracks.shape:{liked_tracks.shape}")
+    liked_track_features = liked_track_dicts["liked_track_features"]
+    print(f"liked_track_features.shape:{liked_track_features.shape}")
+    liked_track_artist_features = liked_track_dicts["liked_track_artist_features"]
+    print(f"liked_track_artist_features.shape:{liked_track_artist_features.shape}")
+
+    # spot_user.set_session_data(spot_user.bulk_get_session_data())
+    # spot_user.bulk_store_session_data()
 
 
 if __name__ == "__main__":

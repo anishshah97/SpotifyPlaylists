@@ -3,6 +3,7 @@ import os
 import pickle
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import redis
 from dotenv import find_dotenv, load_dotenv
@@ -80,7 +81,6 @@ class spotifyUserSession:
 
         return None
 
-    # NOTE: ONLY WORKS WITH S3 and LOCAL DATA ALL BEING STORED
     def bulk_get_session_data(self, df_names="default"):
 
         if df_names == "default":
@@ -101,7 +101,6 @@ class spotifyUserSession:
 
         info_dfs = {}
         for df_name, origin_data_source in dfs_to_import.items():
-            # TODO: Make more robust by allowing to pass kwargs? For now no kwargs so it can break
             if df_name == "liked_tracks":
                 info_dfs[df_name] = self.get_session_data(
                     df_name, origin_data_source, {}
@@ -122,52 +121,105 @@ class spotifyUserSession:
 
     def get_and_update_user_liked_tracks_data(self):
         current_liked_tracks_df = self.get_session_data("liked_tracks", "spotify", {})
+        print(f"current_liked_tracks_df.shape:{current_liked_tracks_df.shape}")
         self.store_session_data("liked_tracks", current_liked_tracks_df, "redis")
+        # self.store_session_data("liked_tracks", current_liked_tracks_df, "s3")
+
         cached_liked_track_features_df, missing_track_ids = self.get_session_data(
-            "liked_track_features",
+            "track_features",
             "mongo",
             {"track_ids": current_liked_tracks_df["track_spid"].unique().tolist()},
         )
+        print(
+            f"cached_liked_track_features_df.shape:{cached_liked_track_features_df.shape}"
+        )
+        print(f"len(missing_track_ids):{len(missing_track_ids)}")
+
         cached_artist_track_features_df, missing_artist_ids = self.get_session_data(
-            "liked_artist_features",
+            "artist_features",
             "mongo",
             {"artist_ids": current_liked_tracks_df["artist_spid"].unique().tolist()},
         )
-        if len(missing_track_ids > 0):
+        print(
+            f"cached_artist_track_features_df.shape:{cached_artist_track_features_df.shape}"
+        )
+        print(f"len(missing_artist_ids):{len(missing_artist_ids)}")
+
+        if len(missing_track_ids) > 0:
             remaining_track_features_df = self.get_session_data(
                 "liked_track_features", "spotify", {"track_ids": missing_track_ids}
             )
             self.store_session_data(
                 "track_features", remaining_track_features_df, "mongo"
             )
-        if len(missing_artist_ids > 0):
+            print(
+                f"remaining_track_features_df.shape:{remaining_track_features_df.shape}"
+            )
+        if len(missing_artist_ids) > 0:
             remaining_artist_features_df = self.get_session_data(
-                "liked_artist_features", "spotify", {"artist_ids": missing_artist_ids}
+                "liked_track_artist_features",
+                "spotify",
+                {"artist_ids": missing_artist_ids},
             )
             self.store_session_data(
                 "artist_features", remaining_artist_features_df, "mongo"
             )
-        return None
+            print(
+                f"remaining_artist_features_df.shape:{remaining_artist_features_df.shape}"
+            )
+        track_features_df = pd.concat(
+            [cached_liked_track_features_df, remaining_track_features_df]
+        )
+        print(f"track_features_df.shape:{track_features_df.shape}")
+        artist_features_df = pd.concat(
+            [cached_artist_track_features_df, remaining_artist_features_df]
+        )
+        print(f"artist_features_df.shape:{artist_features_df.shape}")
+
+        user_liked_session_data = {
+            "liked_tracks": current_liked_tracks_df,
+            "liked_track_features": track_features_df,
+            "liked_track_artist_features": artist_features_df,
+        }
+
+        return user_liked_session_data
         # concat, process, and return dfs
 
     def get_user_liked_tracks_data(self):
+        # BUG: Forcing to be a pandas dataframe as a return response
         cached_liked_tracks_df = self.get_session_data("liked_tracks", "redis", {})
-        if not cached_liked_tracks_df:
+        if not isinstance(cached_liked_tracks_df, pd.DataFrame):
             cached_liked_tracks_df = self.get_session_data("liked_tracks", "s3", {})
-        if not cached_liked_tracks_df:
-            return self.get_and_update_user_liked_tracks_data()
+            if not isinstance(cached_liked_tracks_df, pd.DataFrame):
+                return self.get_and_update_user_liked_tracks_data()
+            else:
+                raise ValueError(
+                    "Something went wrong when pulling get user liked tracks"
+                )
+        print(f"cached_liked_tracks_df.shape:{cached_liked_tracks_df.shape}")
 
         cached_liked_track_features_df, _ = self.get_session_data(
-            "liked_track_features",
+            "track_features",
             "mongo",
             {"track_ids": cached_liked_tracks_df["track_spid"].unique().tolist()},
         )
+        print(
+            f"cached_liked_track_features_df.shape:{cached_liked_track_features_df.shape}"
+        )
         cached_artist_track_features_df, _ = self.get_session_data(
-            "liked_artist_features",
+            "artist_features",
             "mongo",
             {"artist_ids": cached_liked_tracks_df["artist_spid"].unique().tolist()},
         )
-        return None
+        print(
+            f"cached_artist_track_features_df.shape:{cached_artist_track_features_df.shape}"
+        )
+        user_liked_session_data = {
+            "liked_tracks": cached_liked_tracks_df,
+            "liked_track_features": cached_liked_track_features_df,
+            "liked_track_artist_features": cached_artist_track_features_df,
+        }
+        return user_liked_session_data
         # concat, process, and return dfs
 
     def get_session_data(self, df_name, origin_data_source, kwargs={}):
@@ -187,10 +239,36 @@ class spotifyUserSession:
             pass
         elif origin_data_source == "redis":
             print("using redis cached data")
-            pass
+            data_path = f"user:{user_id}:{df_name}"
+            # BUG: assuming object pickled and cached in redis as such will return none default non pickle
+            pickled_data = r.get(data_path)
+            if pickled_data:
+                session_data = pickle.loads(pickled_data)
+            else:
+                session_data = pickled_data
         elif origin_data_source == "mongo":
             print("using mongo pulled data")
-            pass
+            if df_name == "track_features":
+                found_tracks_data = mongo_spotify_tracks.find(
+                    {"track_spid": {"$in": kwargs["track_ids"]}}
+                )
+                found_tracks_df = pd.DataFrame(list(found_tracks_data))
+                del found_tracks_df["_id"]
+                found_track_ids = found_tracks_df["track_spid"].unique().tolist()
+                missing_track_ids = np.setdiff1d(kwargs["track_ids"], found_track_ids)
+                session_data = (found_tracks_df, missing_track_ids)
+
+            elif df_name == "artist_features":
+                found_artists_data = mongo_spotify_artists.find(
+                    {"artist_spid": {"$in": kwargs["artist_ids"]}}
+                )
+                found_artist_df = pd.DataFrame(list(found_artists_data))
+                del found_artist_df["_id"]
+                found_artist_ids = found_artist_df["artist_spid"].unique().tolist()
+                missing_artist_ids = np.setdiff1d(
+                    kwargs["artist_ids"], found_artist_ids
+                )
+                session_data = (found_artist_df, missing_artist_ids)
         else:
             print("pulling data from spotify")
             spotify = self._spotify
@@ -205,8 +283,6 @@ class spotifyUserSession:
                 raise ValueError(f"Not a valid df_name: {df_name}")
         return session_data
 
-    # NOTE: df_names should be a list of df names in the keys to export
-    # TODO: pass json of filename:storage_option to do export
     # - Default stores to wherever in self.store
     def bulk_store_session_data(self, df_names="all"):
 
@@ -271,17 +347,13 @@ class spotifyUserSession:
                 return True
             elif export_data_source == "redis":
                 print("redis _export_data_source")
-                if df_name == "liked_tracks":
-                    # NOTE: expire after 1 day
-                    r.set(
-                        data_path,
-                        pickle.dumps(info_df),
-                        ex=86400,
-                    )
-                    return True
-                else:
-                    return False
-                    # context.deserialize(r.get("key"))
+                # NOTE: expire after 1 day (86400 seconds)
+                r.set(
+                    data_path,
+                    pickle.dumps(info_df),
+                    ex=86400,
+                )
+                return True
             elif export_data_source == "mongo":
                 ops_list = []
                 if df_name == "liked_track_features":
@@ -330,7 +402,7 @@ class spotifyUserSession:
             data_path = f"s3://{AWS_S3_BUCKET}/raw/users/{file_path}"
         elif export_data_source == "redis":
             print("redis path")
-            data_path = f"user:{user_id}:liked_tracks"
+            data_path = f"user:{user_id}:{df_name}"
         elif export_data_source == "mongo":
             print("mongo path not needed")
         return data_path
