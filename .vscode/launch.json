@@ -11,8 +11,10 @@
       "program": "${workspaceFolder}/flask-api/spotifyCLI.py",
       "console": "integratedTerminal",
       "args": [
+        "-ods",
+        "redis",
         "-eds",
-        "mongo"
+        "local"
       ],
       "cwd": "${workspaceFolder}/flask-api"
     }

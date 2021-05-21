@@ -1,4 +1,10 @@
 import argparse
+import logging
+
+log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=log_fmt)
+logger = logging.getLogger("spotifyApp")
+logger.setLevel("DEBUG")
 
 
 def chunk(data, n):

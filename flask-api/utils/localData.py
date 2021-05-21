@@ -1,8 +1,10 @@
-from pathlib import Path
 import datetime
+from pathlib import Path
+
 import pandas as pd
 
 
+# TODO: allow other file paths other than parquet
 def decide_latest_local_cache_path(user_path, date_folder_paths, df_name):
     df_file_name = df_name + ".parquet"
     df_date_folders = dict(
@@ -17,7 +19,7 @@ def decide_latest_local_cache_path(user_path, date_folder_paths, df_name):
     return data_path
 
 
-def gather_local_cached_data(user_id, df_name, **kwargs):
+def get_local_cached_data(user_id, df_name, **kwargs):
     raw_data_dir = Path(Path().resolve().parent, "data", "raw")
     user_path = Path(raw_data_dir, "users", user_id)
     date_folder_paths = {
@@ -28,3 +30,9 @@ def gather_local_cached_data(user_id, df_name, **kwargs):
     print(f"opening {data_path}")
     # BUG: If file doesnt exist then an error will throw
     return pd.read_parquet(data_path)
+
+
+# TODO: Generalize to different file types
+def set_local_cached_data(data_path, info_df):
+    info_df.to_parquet(data_path, index=False)
+    return True

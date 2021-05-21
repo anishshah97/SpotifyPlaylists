@@ -2,7 +2,11 @@ import argparse
 
 import spotipy
 
-from utils import spotifyUserSession
+from utils import (
+    get_and_update_user_liked_tracks_data,
+    get_user_liked_tracks_data,
+    spotifyUserSession,
+)
 
 parser = argparse.ArgumentParser(
     description="CLI tool to drive spotify data gathering commands"
@@ -25,6 +29,15 @@ parser.add_argument(
     default=None,
     help="String choice of whether to store in `local`, `s3`, `redis`, or `mongo`",
 )
+parser.add_argument(
+    "-pipe",
+    "--pipeline",
+    type=str,
+    choices=["upsert_liked", "get_liked"],
+    dest="pipeline",
+    default=None,
+    help="String choice of which implemented pipeline to perform",
+)
 
 
 def main(args):
@@ -33,10 +46,15 @@ def main(args):
         show_dialog=True,
     )
     spotify = spotipy.Spotify(auth_manager=auth_manager)
-
-    # TODO: Abstract spotifyUser testing into another class that wraps the spotifyUSer class which holds only necessary information
     spot_user = spotifyUserSession(spotify, **vars(args))
-    liked_track_dicts = spot_user.get_and_update_user_liked_tracks_data()
+
+    if args.pipeline == "upsert_liked":
+        liked_track_dicts = get_and_update_user_liked_tracks_data(spot_user)
+    elif args.pipeline == "get_liked":
+        liked_track_dicts = get_user_liked_tracks_data(spot_user)
+    else:
+        liked_track_dicts = spot_user.bulk_get_session_data()
+
     liked_tracks = liked_track_dicts["liked_tracks"]
     print(f"liked_tracks.shape:{liked_tracks.shape}")
     liked_track_features = liked_track_dicts["liked_track_features"]
@@ -44,8 +62,8 @@ def main(args):
     liked_track_artist_features = liked_track_dicts["liked_track_artist_features"]
     print(f"liked_track_artist_features.shape:{liked_track_artist_features.shape}")
 
-    # spot_user.set_session_data(spot_user.bulk_get_session_data())
-    # spot_user.bulk_store_session_data()
+    spot_user.set_session_data(liked_track_dicts)
+    spot_user.bulk_store_session_data()
 
 
 if __name__ == "__main__":
