@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { spotifyFlaskBaseAPI } from "../api/bundle";
-import "./testPage.css";
+import "../themes/testPage.css";
 
 export class TestPage extends Component {
   constructor(props) {

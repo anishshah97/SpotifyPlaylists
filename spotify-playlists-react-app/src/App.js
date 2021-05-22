@@ -1,8 +1,9 @@
+import { StyleReset } from "atomize";
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import "./App.css";
 import Login from "./pages/Login";
-import TestPage from "./pages/testPage.js";
+import TestPage from "./pages/testPage.js"; //TODO: Rename testpage to app
+import "./themes/App.css";
 
 //TODO: Pass theme provider to App for consistent color scheme of material UI
 
@@ -12,7 +13,12 @@ export class App extends Component {
     const { spot_authenticated } = this.props.Spotify;
 
     return (
-      <div>{!spot_authenticated ? <Login></Login> : <TestPage></TestPage>}</div>
+      <>
+        <StyleReset />
+        <div>
+          {!spot_authenticated ? <Login></Login> : <TestPage></TestPage>}
+        </div>
+      </>
     );
   }
 }
