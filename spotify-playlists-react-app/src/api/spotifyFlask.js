@@ -1,4 +1,4 @@
-import { createServer, Model } from "miragejs";
+import { createServer } from "miragejs";
 
 const spotifyFlaskBaseAPI = "api";
 
@@ -6,27 +6,36 @@ function makeSpotifyFlaskServer({ environment = "test" } = {}) {
   let server = createServer({
     environment,
 
-    models: {
-      user: Model,
-    },
-
-    seeds(server) {
-      server.create("user", {
-        spotifyName: "Anish Shah",
-      });
-    },
-
     routes() {
       this.namespace = spotifyFlaskBaseAPI;
 
-      this.get("/users", (schema) => {
-        return schema.users.all();
-      });
+      this.post(
+        "/my_spotify_id",
+        (schema, request) => {
+          var data = {
+            user: {
+              spotifyName: "Anish Shah",
+            },
+          };
+          return data;
+        },
+        { timing: 1000 }
+      );
 
-      this.post("/my_spotify_id", (schema, request) => {
-        var data = schema.users.find(1);
-        return data;
-      });
+      this.post(
+        "/my_spotify_data",
+        (schema, request) => {
+          var data = {
+            data: {
+              likedSongs: null,
+              likedSongFeatures: null,
+              likedSongArtistFeatures: null,
+            },
+          };
+          return data;
+        },
+        { timing: 10000 }
+      );
     },
   });
 

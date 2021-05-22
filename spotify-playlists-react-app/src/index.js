@@ -1,11 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
+import { Client as Styletron } from "styletron-engine-atomic";
+import { DebugEngine, Provider as StyletronProvider } from "styletron-react";
 import { makeSpotifyFlaskServer } from "./api/bundle";
 import App from "./App";
-import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import configureStore from "./store";
+import "./themes/index.css";
 
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
@@ -14,9 +16,16 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+const debug =
+  process.env.NODE_ENV === "production" ? void 0 : new DebugEngine();
+
+const engine = new Styletron();
+
 ReactDOM.render(
   <Provider store={configureStore()}>
-    <App />
+    <StyletronProvider value={engine} debug={debug} debugAfterHydration>
+      <App />
+    </StyletronProvider>
   </Provider>,
   document.getElementById("root")
 );
