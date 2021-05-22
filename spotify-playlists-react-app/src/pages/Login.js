@@ -40,7 +40,7 @@ export class Login extends Component {
   render() {
     return (
       <ThemeProvider theme={defaultTheme}>
-        <div class="loginContainer">
+        <div className="loginContainer">
           <Div
             top={loginButton.top}
             left={loginButton.left}
