@@ -1,8 +1,8 @@
+import Button from "@material-ui/core/Button";
+import { green } from "@material-ui/core/colors";
+import { createMuiTheme, ThemeProvider } from "@material-ui/core/styles";
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import Button from "@material-ui/core/Button";
-import { createMuiTheme, ThemeProvider } from "@material-ui/core/styles";
-import { green } from "@material-ui/core/colors";
 import { storeSpotToken } from "../actions/Spotify";
 
 //Green color theme to match Spotify

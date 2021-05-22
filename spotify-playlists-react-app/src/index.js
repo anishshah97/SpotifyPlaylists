@@ -1,13 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
-import configureStore from "./store";
-import "./index.css";
+import { makeSpotifyFlaskServer } from "./api/bundle";
 import App from "./App";
+import "./index.css";
 import reportWebVitals from "./reportWebVitals";
+import configureStore from "./store";
 
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
+  makeSpotifyFlaskServer({
+    environment: process.env.NODE_ENV,
+  });
 }
 
 ReactDOM.render(
