@@ -1,9 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import logo from "../logo.svg";
+import { spotifyFlaskBaseAPI } from "../api/bundle";
 import "./testPage.css";
-
-var baseAPI = "http://localhost:5000";
 
 export class TestPage extends Component {
   constructor(props) {
@@ -19,12 +17,20 @@ export class TestPage extends Component {
       console.log("Authenticated!");
       const spotifyRequestOptions = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spotify_token: spotifyToken }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          spotify_token: spotifyToken,
+        }),
       };
-      fetch(baseAPI + "/my_spotify_id", spotifyRequestOptions)
+      fetch(spotifyFlaskBaseAPI + "/my_spotify_id", spotifyRequestOptions)
         .then((response) => response.json())
-        .then((data) => this.setState({ spotifyName: data["spotifyName"] }));
+        .then((data) =>
+          this.setState({
+            spotifyName: data["user"]["spotifyName"],
+          })
+        );
     }
   }
 
@@ -32,8 +38,8 @@ export class TestPage extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <p>{this.state.spotifyName}</p>
-        </header>
+          <p> {this.state.spotifyName} </p>{" "}
+        </header>{" "}
       </div>
     );
   }

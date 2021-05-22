@@ -1,8 +1,8 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
+import "./App.css";
 import Login from "./pages/Login";
 import TestPage from "./pages/testPage.js";
-import "./App.css";
 
 //TODO: Pass theme provider to App for consistent color scheme of material UI
 
