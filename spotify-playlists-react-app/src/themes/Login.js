@@ -1,19 +1,19 @@
 import { defaultTheme } from "./Spotify";
 
 let particleConfig = {
-  num: [4, 7],
-  rps: 0.1,
+  num: [10, 10],
+  rps: 0.075,
   radius: [5, 40],
-  life: [1.5, 3],
-  v: [2, 3],
-  tha: [-40, 40],
+  life: [3, 5],
+  v: [1.5, 2],
+  tha: [-360, 360],
   alpha: [0.6, 0],
-  scale: [0.1, 0.4],
-  position: "all",
+  scale: [0.1, 0.5],
+  position: "center",
   color: Object.values(defaultTheme.colors),
-  cross: "dead",
+  cross: "bround",
   // emitter: "follow",
-  random: 15,
+  // random: 15,
 };
 
 let particleBg = {

@@ -9,12 +9,12 @@ let introContainer = {
 };
 
 let particleConfig = {
-  num: [4, 7],
-  rps: 0.1,
+  num: [10, 10],
+  rps: 0.2,
   radius: [5, 40],
-  life: [1.5, 3],
+  life: [1.5, 30],
   v: [2, 3],
-  tha: [-40, 40],
+  tha: [-360, 360],
   alpha: [0.6, 0],
   scale: [0.1, 0.4],
   position: "all",

@@ -1,4 +1,4 @@
-import { Button, Div, ThemeProvider } from "atomize";
+import { Button, Div, Icon, ThemeProvider } from "atomize";
 import ParticlesBg from "particles-bg";
 import React, { Component } from "react";
 import { connect } from "react-redux";
@@ -33,8 +33,6 @@ export class Login extends Component {
     if (_token) {
       this.props.storeSpotToken(hash.access_token);
     }
-    console.log(particleConfig);
-    console.log();
   }
   //TODO: Find a good way to unpack login button without explicitly defining attributes
   render() {
@@ -54,6 +52,14 @@ export class Login extends Component {
                 hoverShadow="4"
                 bg={defaultTheme.colors.green}
                 m={{ r: "1rem" }}
+                suffix={
+                  <Icon
+                    name="Power"
+                    size="15px"
+                    color="white"
+                    m={{ l: "0.35rem" }}
+                  />
+                }
               >
                 Login to Spotify
               </Button>
